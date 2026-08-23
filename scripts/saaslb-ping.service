@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 # Change this to your live health URL before enabling the unit.
-Environment=PING_URL=https://https://saaslb-backend.onrender.com/api/health
+Environment=PING_URL=https://saaslb-backend.onrender.com/api/health
 Environment=PING_INTERVAL=300
 ExecStart=/usr/local/bin/saaslb-ping
 Restart=always
