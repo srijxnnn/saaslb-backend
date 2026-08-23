@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -116,7 +117,8 @@ func (s *Server) createCheckout(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		writeMessage(w, http.StatusBadGateway, "Dodo did not start checkout.")
+		log.Printf("dodo checkout: %v", err)
+		writeMessage(w, http.StatusBadGateway, checkoutStartError(err))
 		return
 	}
 	if err := s.db.SetCheckoutSession(r.Context(), checkout.ID, session.SessionID); err != nil {
@@ -190,6 +192,34 @@ func (s *Server) syncCheckout(r *http.Request, checkout store.Checkout) (store.C
 	}
 
 	return s.db.GetCheckout(r.Context(), checkout.ID)
+}
+
+func checkoutStartError(err error) string {
+	var api dodo.APIError
+	if errors.As(err, &api) {
+		switch api.Code {
+		case "UNAUTHORIZED":
+			return "Dodo rejected the API key. Check that DODO_ENVIRONMENT matches the key (test vs live)."
+		case "MERCHANT_NOT_LIVE":
+			return "Dodo business is still in test mode. Use test keys or finish live activation."
+		case "NOT_FOUND":
+			return "Dodo product was not found in this environment. Check DODO_PRODUCT_ID."
+		case "PAY_AS_YOU_WANT_AMOUNT_REQUIRED":
+			return "Dodo product needs Pay What You Want turned on."
+		case "REQUEST_AMOUNT_BELOW_MINIMUM", "TOTAL_PAYMENT_AMOUNT_BELOW_MINIMUM_AMOUNT":
+			return "That bid is below the Dodo product minimum."
+		}
+		if api.Status == http.StatusUnauthorized {
+			return "Dodo rejected the API key. Check that DODO_ENVIRONMENT matches the key (test vs live)."
+		}
+		if api.Status == http.StatusNotFound {
+			return "Dodo product was not found in this environment. Check DODO_PRODUCT_ID."
+		}
+		if api.Message != "" {
+			return "Dodo did not start checkout. " + api.Message
+		}
+	}
+	return "Dodo did not start checkout."
 }
 
 func itoa(n int) string {

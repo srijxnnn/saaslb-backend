@@ -45,6 +45,26 @@ type SessionStatus struct {
 	PaymentStatus *string `json:"payment_status"`
 }
 
+type APIError struct {
+	Status  int
+	Code    string
+	Message string
+	Body    string
+}
+
+func (e APIError) Error() string {
+	if e.Code != "" && e.Message != "" {
+		return fmt.Sprintf("dodo %d %s: %s", e.Status, e.Code, e.Message)
+	}
+	if e.Message != "" {
+		return fmt.Sprintf("dodo %d: %s", e.Status, e.Message)
+	}
+	if e.Body != "" {
+		return fmt.Sprintf("dodo %d: %s", e.Status, e.Body)
+	}
+	return fmt.Sprintf("dodo %d", e.Status)
+}
+
 func (c *Client) CreateCheckout(ctx context.Context, in CreateSessionInput) (Session, error) {
 	body := map[string]any{
 		"product_cart": []map[string]any{
@@ -54,9 +74,11 @@ func (c *Client) CreateCheckout(ctx context.Context, in CreateSessionInput) (Ses
 				"amount":     in.AmountCents,
 			},
 		},
-		"return_url":            in.ReturnURL,
-		"metadata":              in.Metadata,
-		"redirect_immediately":  true,
+		"return_url": in.ReturnURL,
+		"metadata":   in.Metadata,
+		"feature_flags": map[string]any{
+			"redirect_immediately": true,
+		},
 	}
 
 	var session Session
@@ -108,12 +130,30 @@ func (c *Client) do(ctx context.Context, method, path string, payload any, out a
 		return err
 	}
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("dodo %s %s: %s %s", method, path, resp.Status, truncate(raw, 400))
+		return parseAPIError(resp.StatusCode, raw)
 	}
 	if out == nil || len(raw) == 0 {
 		return nil
 	}
 	return json.Unmarshal(raw, out)
+}
+
+func parseAPIError(status int, raw []byte) APIError {
+	var payload struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+		Error   string `json:"error"`
+	}
+	if err := json.Unmarshal(raw, &payload); err == nil {
+		message := payload.Message
+		if message == "" {
+			message = payload.Error
+		}
+		if payload.Code != "" || message != "" {
+			return APIError{Status: status, Code: payload.Code, Message: message, Body: truncate(raw, 400)}
+		}
+	}
+	return APIError{Status: status, Body: truncate(raw, 400)}
 }
 
 func truncate(raw []byte, n int) string {

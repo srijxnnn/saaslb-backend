@@ -20,9 +20,10 @@ func (s *Server) withPeriod(next http.Handler) http.Handler {
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ok":            true,
-		"paymentsMode":  s.cfg.PaymentsMode,
-		"dodoConfigured": s.dodo != nil,
+		"ok":              true,
+		"paymentsMode":    s.cfg.PaymentsMode,
+		"dodoConfigured":  s.dodo != nil,
+		"dodoEnvironment": s.cfg.DodoEnvironment,
 	})
 }
 

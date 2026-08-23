@@ -46,6 +46,7 @@ func main() {
 	var payments *dodo.Client
 	if cfg.PaymentsMode == "dodo" && cfg.DodoAPIKey != "" && cfg.DodoProductID != "" {
 		payments = dodo.New(cfg.DodoBaseURL(), cfg.DodoAPIKey, cfg.DodoProductID)
+		log.Printf("dodo %s product=%s", cfg.DodoEnvironment, cfg.DodoProductID)
 	}
 
 	server := &http.Server{
