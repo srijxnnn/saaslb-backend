@@ -12,6 +12,8 @@ Go API for the monthly pay-to-rank leaderboard. Listings, clicks, and bids live 
 | `GET` | `/api/checkouts/{id}` | Status after Dodo redirects back. Syncs from Dodo if the webhook is late. |
 | `POST` | `/api/webhooks/dodo` | Dodo `payment.succeeded` applies the bid. |
 | `GET` | `/api/categories`, `/api/period`, `/api/health` | Shared lists and month rollover. |
+| `GET` | `/api/stats` | Current online count and all-time visits. |
+| `POST` | `/api/presence` | Heartbeat. `visit: true` counts one page load. |
 
 A bid is the **target rank amount**. For a new listing you pay that amount. For a raise you only pay the difference.
 

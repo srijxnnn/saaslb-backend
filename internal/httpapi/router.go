@@ -40,6 +40,8 @@ func New(cfg config.Config, db *store.Store, payments *dodo.Client) http.Handler
 	r.Get("/api/health", s.health)
 	r.Get("/api/period", s.period)
 	r.Get("/api/categories", s.categories)
+	r.Get("/api/stats", s.stats)
+	r.Post("/api/presence", s.presence)
 	r.Get("/api/products", s.listProducts)
 	r.Get("/api/products/{id}", s.getProduct)
 	r.Post("/api/products/{id}/clicks", s.recordClick)

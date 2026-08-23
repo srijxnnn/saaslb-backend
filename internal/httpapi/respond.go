@@ -35,7 +35,8 @@ func statusFor(err error) int {
 		errors.Is(err, domain.ErrNeedOneDollar),
 		errors.Is(err, domain.ErrTooManyCats),
 		errors.Is(err, domain.ErrNeedCategory),
-		errors.Is(err, domain.ErrUnknownCat):
+		errors.Is(err, domain.ErrUnknownCat),
+		errors.Is(err, domain.ErrBadVisitor):
 		return http.StatusBadRequest
 	default:
 		var low *domain.BidTooLowError

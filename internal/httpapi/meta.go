@@ -10,6 +10,12 @@ import (
 
 func (s *Server) withPeriod(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/health", "/api/stats", "/api/presence":
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		if err := s.db.EnsurePeriod(r.Context(), domain.CurrentPeriodKey(time.Now())); err != nil {
 			writeMessage(w, http.StatusInternalServerError, "Could not roll the month.")
 			return
