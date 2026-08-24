@@ -8,6 +8,7 @@ const (
 	TakeFirstExtraCents = 100
 	MaxBidCents         = 99_999_900
 	MaxCategories       = 15
+	ClickWindow         = time.Hour
 )
 
 // LaunchDate is when public visit counting started. The total only goes up.

@@ -27,6 +27,12 @@ type productDoc struct {
 	MetaRefreshedAt time.Time `bson:"meta_refreshed_at,omitempty"`
 }
 
+type clickDoc struct {
+	ID        string    `bson:"_id"`
+	ProductID string    `bson:"product_id"`
+	CreatedAt time.Time `bson:"created_at"`
+}
+
 type checkoutDoc struct {
 	ID                string     `bson:"_id"`
 	SessionID         *string    `bson:"session_id,omitempty"`

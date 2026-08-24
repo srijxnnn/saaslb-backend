@@ -21,9 +21,10 @@ type Product struct {
 	IconURL    string    `json:"iconUrl"`
 	ListingKey string    `json:"listingKey"`
 	Categories []string  `json:"categories"`
-	BidCents   int       `json:"bidCents"`
-	Clicks     int       `json:"clicks"`
-	CreatedAt  time.Time `json:"createdAt"`
+	BidCents        int       `json:"bidCents"`
+	Clicks          int       `json:"clicks"`
+	ClicksLastHour  int       `json:"clicksLastHour"`
+	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 	Accent     string    `json:"accent"`
 	Period     string    `json:"-"`

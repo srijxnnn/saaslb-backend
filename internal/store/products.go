@@ -76,14 +76,20 @@ func (s *Store) ListProducts(ctx context.Context) ([]domain.Product, error) {
 	for _, doc := range docs {
 		products = append(products, doc.toDomain())
 	}
+	s.applyClickWindow(ctx, products)
 	return products, nil
 }
 
 func (s *Store) GetProduct(ctx context.Context, idOrSlug string) (domain.Product, error) {
-	return s.findProduct(ctx, bson.M{"$or": []bson.M{
+	product, err := s.findProduct(ctx, bson.M{"$or": []bson.M{
 		{"_id": idOrSlug},
 		{"slug": idOrSlug},
 	}})
+	if err != nil {
+		return domain.Product{}, err
+	}
+	s.applyClickWindowOne(ctx, &product)
+	return product, nil
 }
 
 func (s *Store) ProductByListingKey(ctx context.Context, key string) (domain.Product, error) {
@@ -100,7 +106,14 @@ func (s *Store) IncrementClicks(ctx context.Context, id string) (int, error) {
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return 0, ErrNotFound
 	}
-	return doc.Clicks, err
+	if err != nil {
+		return 0, err
+	}
+
+	if insertErr := s.recordClickEvent(ctx, id); insertErr != nil {
+		log.Printf("click event %s: %v", id, insertErr)
+	}
+	return doc.Clicks, nil
 }
 
 const metaRefreshCooldown = 10 * time.Second
@@ -140,6 +153,7 @@ func (s *Store) RefreshListingMeta(ctx context.Context, idOrSlug string) (domain
 		if fetchErr != nil {
 			return product, ErrSiteUnreadable
 		}
+		s.applyClickWindowOne(ctx, &product)
 		return product, nil
 	}
 
@@ -157,7 +171,9 @@ func (s *Store) RefreshListingMeta(ctx context.Context, idOrSlug string) (domain
 	}
 
 	log.Printf("listing meta refresh %s: tagline=%q icon=%q", product.WebsiteURL, info.Tagline, info.IconURL)
-	return updated.toDomain(), nil
+	out := updated.toDomain()
+	s.applyClickWindowOne(ctx, &out)
+	return out, nil
 }
 
 func (s *Store) RefreshEmptyTaglines(ctx context.Context) error {

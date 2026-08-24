@@ -9,6 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	"saaslb-backend/internal/domain"
 )
 
 type Store struct {
@@ -67,6 +69,10 @@ func (s *Store) visitorsCol() *mongo.Collection {
 	return s.db.Collection("visitors")
 }
 
+func (s *Store) clicks() *mongo.Collection {
+	return s.db.Collection("clicks")
+}
+
 // Migrate creates unique and sort indexes. MongoDB has no CREATE TABLE, so
 // uniqueness that used to live in Postgres constraints lives here instead.
 func (s *Store) Migrate(ctx context.Context) error {
@@ -109,6 +115,21 @@ func (s *Store) Migrate(ctx context.Context) error {
 
 	if err := s.EnsureStats(ctx); err != nil {
 		return fmt.Errorf("stats: %w", err)
+	}
+
+	_, err = s.clicks().Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys: bson.D{{Key: "created_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(
+				int32(domain.ClickWindow.Seconds()),
+			),
+		},
+		{
+			Keys: bson.D{{Key: "product_id", Value: 1}, {Key: "created_at", Value: 1}},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("clicks indexes: %w", err)
 	}
 
 	return nil
