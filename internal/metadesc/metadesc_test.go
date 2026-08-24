@@ -124,6 +124,26 @@ func TestFetch(t *testing.T) {
 	}
 }
 
+func TestFetchExactDoesNotInventTagline(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	got, err := FetchExact(context.Background(), server.URL)
+	if err == nil {
+		t.Fatal("expected fetch error")
+	}
+	if got.Tagline != "" {
+		t.Fatalf("should not invent a tagline, got %q", got.Tagline)
+	}
+	if got.IconURL != "" {
+		t.Fatalf("should not invent an icon, got %q", got.IconURL)
+	}
+}
+
 func TestFetchRejectsNonHTTP(t *testing.T) {
 	t.Parallel()
 

@@ -19,6 +19,8 @@ import (
 
 var ErrNotFound = errors.New("not found")
 var ErrAlreadyProcessed = errors.New("already processed")
+var ErrMetaCooldown = errors.New("already refreshed that listing a moment ago")
+var ErrSiteUnreadable = errors.New("could not read that site")
 
 type Checkout struct {
 	ID                string

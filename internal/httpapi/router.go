@@ -45,6 +45,7 @@ func New(cfg config.Config, db *store.Store, payments *dodo.Client) http.Handler
 	r.Get("/api/products", s.listProducts)
 	r.Get("/api/products/{id}", s.getProduct)
 	r.Post("/api/products/{id}/clicks", s.recordClick)
+	r.Post("/api/products/{id}/meta", s.refreshProductMeta)
 	r.Post("/api/checkouts", s.createCheckout)
 	r.Get("/api/checkouts/{id}", s.getCheckout)
 	r.Post("/api/webhooks/dodo", s.dodoWebhook)

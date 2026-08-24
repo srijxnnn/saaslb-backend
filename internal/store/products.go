@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -100,6 +101,61 @@ func (s *Store) IncrementClicks(ctx context.Context, id string) (int, error) {
 		return 0, ErrNotFound
 	}
 	return doc.Clicks, err
+}
+
+const metaRefreshCooldown = 10 * time.Second
+
+func (s *Store) RefreshListingMeta(ctx context.Context, idOrSlug string) (domain.Product, error) {
+	doc, err := s.findProductDoc(ctx, bson.M{"$or": []bson.M{
+		{"_id": idOrSlug},
+		{"slug": idOrSlug},
+	}})
+	if err != nil {
+		return domain.Product{}, err
+	}
+
+	if !doc.MetaRefreshedAt.IsZero() && time.Since(doc.MetaRefreshedAt) < metaRefreshCooldown {
+		return doc.toDomain(), ErrMetaCooldown
+	}
+
+	product := doc.toDomain()
+	info, fetchErr := metadesc.FetchExact(ctx, product.WebsiteURL)
+	if fetchErr != nil {
+		log.Printf("listing meta refresh %s: %v", product.WebsiteURL, fetchErr)
+	}
+
+	set := bson.M{
+		"meta_refreshed_at": time.Now().UTC(),
+	}
+	if info.Tagline != "" {
+		set["tagline"] = info.Tagline
+	}
+	if info.IconURL != "" {
+		set["icon_url"] = info.IconURL
+	}
+
+	if info.Tagline == "" && info.IconURL == "" {
+		if fetchErr != nil {
+			return product, ErrSiteUnreadable
+		}
+		return product, nil
+	}
+
+	var updated productDoc
+	err = s.products().FindOneAndUpdate(ctx,
+		bson.M{"_id": product.ID},
+		bson.M{"$set": set},
+		options.FindOneAndUpdate().SetReturnDocument(options.After),
+	).Decode(&updated)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return domain.Product{}, ErrNotFound
+	}
+	if err != nil {
+		return domain.Product{}, err
+	}
+
+	log.Printf("listing meta refresh %s: tagline=%q icon=%q", product.WebsiteURL, info.Tagline, info.IconURL)
+	return updated.toDomain(), nil
 }
 
 func (s *Store) RefreshEmptyTaglines(ctx context.Context) error {

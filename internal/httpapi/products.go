@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -54,6 +55,28 @@ func (s *Server) getProduct(w http.ResponseWriter, r *http.Request) {
 		"product": product,
 		"rank":    domain.RankOf(product.ID, products),
 	})
+}
+
+func (s *Server) refreshProductMeta(w http.ResponseWriter, r *http.Request) {
+	product, err := s.db.RefreshListingMeta(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		if errors.Is(err, store.ErrMetaCooldown) {
+			writeMessage(w, http.StatusTooManyRequests, "Already refreshed that listing a moment ago.")
+			return
+		}
+		if errors.Is(err, store.ErrNotFound) {
+			writeMessage(w, http.StatusNotFound, "Listing not found.")
+			return
+		}
+		if errors.Is(err, store.ErrSiteUnreadable) {
+			writeMessage(w, http.StatusBadGateway, "Could not read that site.")
+			return
+		}
+		writeMessage(w, http.StatusInternalServerError, "Could not refresh that listing.")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"product": product})
 }
 
 func (s *Server) recordClick(w http.ResponseWriter, r *http.Request) {

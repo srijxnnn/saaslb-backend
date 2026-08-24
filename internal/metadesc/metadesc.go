@@ -56,6 +56,24 @@ type PageInfo struct {
 // Fetch loads pageURL and returns the best meta description and icon it can
 // find. Login walls often have no tags, so we retry www and finally the host label.
 func Fetch(ctx context.Context, pageURL string) (PageInfo, error) {
+	info, err := fetchPage(ctx, pageURL)
+	if info.Tagline == "" {
+		info.Tagline = BrandFromURL(pageURL)
+	}
+	if info.IconURL == "" {
+		info.IconURL = FallbackIcon(pageURL)
+	}
+	return info, err
+}
+
+// FetchExact is Fetch without inventing a brand-name tagline or a default
+// favicon when the site never actually answered. Use this for a manual refresh
+// so a failed scrape cannot wipe a listing that already looks right.
+func FetchExact(ctx context.Context, pageURL string) (PageInfo, error) {
+	return fetchPage(ctx, pageURL)
+}
+
+func fetchPage(ctx context.Context, pageURL string) (PageInfo, error) {
 	var info PageInfo
 	if err := validateURL(pageURL); err != nil {
 		return info, err
@@ -84,12 +102,6 @@ func Fetch(ctx context.Context, pageURL string) (PageInfo, error) {
 		}
 	}
 
-	if info.Tagline == "" {
-		info.Tagline = BrandFromURL(pageURL)
-	}
-	if info.IconURL == "" {
-		info.IconURL = FallbackIcon(pageURL)
-	}
 	return info, err
 }
 

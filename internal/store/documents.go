@@ -9,20 +9,21 @@ import (
 // productDoc is the MongoDB shape of a listing. Domain.Product stays JSON-facing
 // so HTTP handlers do not need bson tags.
 type productDoc struct {
-	ID             string    `bson:"_id"`
-	Slug           string    `bson:"slug"`
-	Name           string    `bson:"name"`
-	Tagline        string    `bson:"tagline"`
-	WebsiteURL     string    `bson:"website_url"`
-	IconURL        string    `bson:"icon_url,omitempty"`
-	ListingKey     string    `bson:"listing_key"`
-	Categories     []string  `bson:"categories"`
-	BidCents       int       `bson:"bid_cents"`
-	Clicks         int       `bson:"clicks"`
-	CreatedAt      time.Time `bson:"created_at"`
-	Accent         string    `bson:"accent"`
-	Period         string    `bson:"period"`
-	LastCheckoutID string    `bson:"last_checkout_id,omitempty"`
+	ID              string    `bson:"_id"`
+	Slug            string    `bson:"slug"`
+	Name            string    `bson:"name"`
+	Tagline         string    `bson:"tagline"`
+	WebsiteURL      string    `bson:"website_url"`
+	IconURL         string    `bson:"icon_url,omitempty"`
+	ListingKey      string    `bson:"listing_key"`
+	Categories      []string  `bson:"categories"`
+	BidCents        int       `bson:"bid_cents"`
+	Clicks          int       `bson:"clicks"`
+	CreatedAt       time.Time `bson:"created_at"`
+	Accent          string    `bson:"accent"`
+	Period          string    `bson:"period"`
+	LastCheckoutID  string    `bson:"last_checkout_id,omitempty"`
+	MetaRefreshedAt time.Time `bson:"meta_refreshed_at,omitempty"`
 }
 
 type checkoutDoc struct {
