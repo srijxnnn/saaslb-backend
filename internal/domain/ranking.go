@@ -38,7 +38,7 @@ func ValidateBid(amountCents int, existing *Product) (paidCents int, err error) 
 		return amountCents - existing.BidCents, nil
 	}
 
-	if amountCents < MinNewBidCents {
+	if amountCents < 0 {
 		return 0, ErrNeedOneDollar
 	}
 	return amountCents, nil

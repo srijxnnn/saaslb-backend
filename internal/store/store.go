@@ -15,10 +15,10 @@ type Store struct {
 	client *mongo.Client
 	db     *mongo.Database
 
-	liveMu sync.Mutex
-	live   map[string]time.Time
-	visits int64
-	since  time.Time
+	statsMu  sync.Mutex
+	visitors int64
+	visits   int64
+	since    time.Time
 }
 
 func Open(ctx context.Context, uri, database string) (*Store, error) {
@@ -38,7 +38,6 @@ func Open(ctx context.Context, uri, database string) (*Store, error) {
 	return &Store{
 		client: client,
 		db:     client.Database(database),
-		live:   map[string]time.Time{},
 	}, nil
 }
 
@@ -64,8 +63,8 @@ func (s *Store) meta() *mongo.Collection {
 	return s.db.Collection("meta")
 }
 
-func (s *Store) presence() *mongo.Collection {
-	return s.db.Collection("presence")
+func (s *Store) visitorsCol() *mongo.Collection {
+	return s.db.Collection("visitors")
 }
 
 // Migrate creates unique and sort indexes. MongoDB has no CREATE TABLE, so
@@ -106,16 +105,6 @@ func (s *Store) Migrate(ctx context.Context) error {
 	})
 	if err != nil {
 		return fmt.Errorf("checkouts indexes: %w", err)
-	}
-
-	_, err = s.presence().Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys:    bson.D{{Key: "last_seen", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(presenceTTLSeconds),
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("presence indexes: %w", err)
 	}
 
 	if err := s.EnsureStats(ctx); err != nil {

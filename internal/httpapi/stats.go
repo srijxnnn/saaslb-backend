@@ -17,7 +17,7 @@ type presenceRequest struct {
 func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
 	stats, err := s.db.SiteStats(r.Context())
 	if err != nil {
-		writeMessage(w, http.StatusInternalServerError, "Could not load visits.")
+		writeMessage(w, http.StatusInternalServerError, "Could not load visitors.")
 		return
 	}
 	writeJSON(w, http.StatusOK, statsJSON(stats))
@@ -36,7 +36,7 @@ func (s *Server) presence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stats, err := s.db.TouchPresence(r.Context(), visitorID, req.Visit)
+	stats, err := s.db.RecordVisitor(r.Context(), visitorID, req.Visit)
 	if err != nil {
 		writeMessage(w, http.StatusInternalServerError, "Could not record that visit.")
 		return
@@ -47,11 +47,13 @@ func (s *Server) presence(w http.ResponseWriter, r *http.Request) {
 
 func statsJSON(stats store.SiteStats) map[string]any {
 	payload := map[string]any{
-		"online": stats.Online,
-		"visits": stats.Visits,
+		"visitors": stats.Visitors,
+		"visits":   stats.Visits,
 	}
-	if !stats.Since.IsZero() {
-		payload["since"] = stats.Since.UTC().Format(time.RFC3339)
+	since := stats.Since
+	if since.IsZero() {
+		since = domain.LaunchDate
 	}
+	payload["since"] = since.UTC().Format(time.RFC3339)
 	return payload
 }

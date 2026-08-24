@@ -43,12 +43,20 @@ func TestValidateBid(t *testing.T) {
 	if _, err := ValidateBid(150, nil); err != ErrWholeDollars {
 		t.Fatalf("expected whole dollars, got %v", err)
 	}
-	if _, err := ValidateBid(0, nil); err != ErrNeedOneDollar {
-		t.Fatalf("expected min new bid, got %v", err)
+	paid, err := ValidateBid(0, nil)
+	if err != nil || paid != 0 {
+		t.Fatalf("free listing: paid=%d err=%v", paid, err)
+	}
+	paid, err = ValidateBid(100, nil)
+	if err != nil || paid != 100 {
+		t.Fatalf("new listing: paid=%d err=%v", paid, err)
+	}
+	if _, err := ValidateBid(-100, nil); err != ErrNeedOneDollar {
+		t.Fatalf("expected negative bid rejected, got %v", err)
 	}
 
 	existing := &Product{BidCents: 1000}
-	paid, err := ValidateBid(1200, existing)
+	paid, err = ValidateBid(1200, existing)
 	if err != nil || paid != 200 {
 		t.Fatalf("raise: paid=%d err=%v", paid, err)
 	}

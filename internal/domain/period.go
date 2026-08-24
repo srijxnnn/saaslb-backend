@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// FastPeriodReset is a verification switch. When true, bids drop back to $1
-// every minute instead of at the start of each calendar month. Flip this back
-// to false after you have confirmed the rollover.
+// FastPeriodReset is a verification switch. When true, bids drop back to $0
+// and clicks drop to 0 every minute instead of at the start of each calendar
+// month. Flip this back to false after you have confirmed the rollover.
 const FastPeriodReset = false
 
 func CurrentPeriodKey(now time.Time) string {

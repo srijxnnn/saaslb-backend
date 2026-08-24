@@ -12,7 +12,7 @@ var (
 	ErrUnreadable    = errors.New("Can't make sense of that. Try a website.")
 	ErrWholeDollars  = errors.New("Whole dollars only, no cents.")
 	ErrBidTooHigh    = errors.New("Whoa, $999,999 is as high as it goes.")
-	ErrNeedOneDollar = errors.New("Need $1 to get on the list.")
+	ErrNeedOneDollar = errors.New("Bids start at $0.")
 	ErrTooManyCats   = errors.New("15 categories is the max.")
 	ErrNeedCategory  = errors.New("Pick at least one category.")
 	ErrUnknownCat    = errors.New("One of those categories isn't on the list.")

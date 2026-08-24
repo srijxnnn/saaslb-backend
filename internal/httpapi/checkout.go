@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"saaslb-backend/internal/domain"
 	"saaslb-backend/internal/dodo"
+	"saaslb-backend/internal/domain"
 	"saaslb-backend/internal/store"
 )
 
@@ -78,7 +78,8 @@ func (s *Server) createCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.cfg.PaymentsMode == "simulate" {
+	// $0 listings skip Dodo: there is nothing to charge.
+	if s.cfg.PaymentsMode == "simulate" || paidCents == 0 {
 		product, err := s.db.FulfillCheckout(r.Context(), checkout.ID, "", s.currentPeriod())
 		if err != nil && !errors.Is(err, store.ErrAlreadyProcessed) {
 			writeMessage(w, http.StatusInternalServerError, "Could not apply that bid.")
@@ -110,10 +111,10 @@ func (s *Server) createCheckout(w http.ResponseWriter, r *http.Request) {
 		AmountCents: paidCents,
 		ReturnURL:   s.cfg.FrontendURL + "/?checkout=" + checkout.ID,
 		Metadata: map[string]string{
-			"checkout_id":   checkout.ID,
-			"listing_key":   checkout.ListingKey,
-			"amount_cents":  itoa(checkout.AmountCents),
-			"paid_cents":    itoa(checkout.PaidCents),
+			"checkout_id":  checkout.ID,
+			"listing_key":  checkout.ListingKey,
+			"amount_cents": itoa(checkout.AmountCents),
+			"paid_cents":   itoa(checkout.PaidCents),
 		},
 	})
 	if err != nil {

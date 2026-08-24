@@ -17,7 +17,7 @@ Go API for the monthly pay-to-rank leaderboard. Listings, clicks, and bids live 
 
 A bid is the **target rank amount**. For a new listing you pay that amount. For a raise you only pay the difference.
 
-When the calendar month changes, every listing drops back to `$1`. Same listing first still sits higher.
+When the calendar month changes, every listing drops back to `$0`. Same listing first still sits higher.
 
 ## Run it
 

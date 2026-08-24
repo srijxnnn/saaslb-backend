@@ -38,11 +38,15 @@ func (s *Store) EnsurePeriod(ctx context.Context, period string) error {
 		return nil
 	}
 
-	log.Printf("period rolled %s -> %s; bids reset to $1", current.Value, period)
+	log.Printf("period rolled %s -> %s; bids reset to $0 and clicks to 0", current.Value, period)
 
 	if _, err := s.products().UpdateMany(ctx,
 		bson.M{"period": bson.M{"$ne": period}},
-		bson.M{"$set": bson.M{"bid_cents": domain.MinNewBidCents, "period": period}},
+		bson.M{"$set": bson.M{
+			"bid_cents": domain.MinNewBidCents,
+			"clicks":    0,
+			"period":    period,
+		}},
 	); err != nil {
 		return err
 	}
