@@ -124,8 +124,10 @@ func (s *Store) RefreshListingMeta(ctx context.Context, idOrSlug string) (domain
 		log.Printf("listing meta refresh %s: %v", product.WebsiteURL, fetchErr)
 	}
 
+	now := time.Now().UTC()
 	set := bson.M{
-		"meta_refreshed_at": time.Now().UTC(),
+		"meta_refreshed_at": now,
+		"updated_at":        now,
 	}
 	if info.Tagline != "" {
 		set["tagline"] = info.Tagline
@@ -186,6 +188,7 @@ func (s *Store) RefreshEmptyTaglines(ctx context.Context) error {
 		if len(set) == 0 {
 			continue
 		}
+		set["updated_at"] = time.Now().UTC()
 
 		if _, err := s.products().UpdateOne(ctx, bson.M{"_id": product.ID}, bson.M{"$set": set}); err != nil {
 			return err

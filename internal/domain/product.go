@@ -24,6 +24,7 @@ type Product struct {
 	BidCents   int       `json:"bidCents"`
 	Clicks     int       `json:"clicks"`
 	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 	Accent     string    `json:"accent"`
 	Period     string    `json:"-"`
 }

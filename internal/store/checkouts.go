@@ -168,6 +168,7 @@ func (s *Store) createFromCheckout(ctx context.Context, checkout Checkout, perio
 		BidCents:   domain.NextBidAfterPayment(nil, checkout.AmountCents, checkout.PaidCents),
 		Clicks:     0,
 		CreatedAt:  now,
+		UpdatedAt:  now,
 		Accent:     domain.AccentForIndex(int(count)),
 		Period:     period,
 	}
@@ -204,6 +205,7 @@ func (s *Store) raiseProduct(ctx context.Context, existing productDoc, checkout 
 			"bid_cents":        next.BidCents,
 			"period":           period,
 			"last_checkout_id": checkout.ID,
+			"updated_at":       time.Now().UTC(),
 		}
 		if len(checkout.Categories) > 0 {
 			set["categories"] = checkout.Categories

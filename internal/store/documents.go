@@ -20,6 +20,7 @@ type productDoc struct {
 	BidCents        int       `bson:"bid_cents"`
 	Clicks          int       `bson:"clicks"`
 	CreatedAt       time.Time `bson:"created_at"`
+	UpdatedAt       time.Time `bson:"updated_at,omitempty"`
 	Accent          string    `bson:"accent"`
 	Period          string    `bson:"period"`
 	LastCheckoutID  string    `bson:"last_checkout_id,omitempty"`
@@ -44,6 +45,16 @@ type checkoutDoc struct {
 	ProductID         *string    `bson:"product_id,omitempty"`
 }
 
+func (d productDoc) lastUpdated() time.Time {
+	if !d.UpdatedAt.IsZero() {
+		return d.UpdatedAt
+	}
+	if !d.MetaRefreshedAt.IsZero() {
+		return d.MetaRefreshedAt
+	}
+	return d.CreatedAt
+}
+
 func (d productDoc) toDomain() domain.Product {
 	return domain.Product{
 		ID:         d.ID,
@@ -57,6 +68,7 @@ func (d productDoc) toDomain() domain.Product {
 		BidCents:   d.BidCents,
 		Clicks:     d.Clicks,
 		CreatedAt:  d.CreatedAt,
+		UpdatedAt:  d.lastUpdated(),
 		Accent:     d.Accent,
 		Period:     d.Period,
 	}
@@ -83,6 +95,10 @@ func (d checkoutDoc) toStore() Checkout {
 }
 
 func productFromDomain(product domain.Product, lastCheckoutID string) productDoc {
+	updatedAt := product.UpdatedAt
+	if updatedAt.IsZero() {
+		updatedAt = product.CreatedAt
+	}
 	return productDoc{
 		ID:             product.ID,
 		Slug:           product.Slug,
@@ -95,6 +111,7 @@ func productFromDomain(product domain.Product, lastCheckoutID string) productDoc
 		BidCents:       product.BidCents,
 		Clicks:         product.Clicks,
 		CreatedAt:      product.CreatedAt,
+		UpdatedAt:      updatedAt,
 		Accent:         product.Accent,
 		Period:         product.Period,
 		LastCheckoutID: lastCheckoutID,
