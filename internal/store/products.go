@@ -15,51 +15,6 @@ import (
 	"saaslb-backend/internal/metadesc"
 )
 
-func (s *Store) EnsurePeriod(ctx context.Context, period string) error {
-	var current struct {
-		Value string `bson:"value"`
-	}
-	err := s.meta().FindOne(ctx, bson.M{"_id": "period"}).Decode(&current)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		_, err = s.meta().InsertOne(ctx, bson.M{"_id": "period", "value": period})
-		if err == nil {
-			return nil
-		}
-		if !mongo.IsDuplicateKeyError(err) {
-			return err
-		}
-		if err := s.meta().FindOne(ctx, bson.M{"_id": "period"}).Decode(&current); err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
-
-	if current.Value == period {
-		return nil
-	}
-
-	log.Printf("period rolled %s -> %s; bids reset to $0 and clicks to 0", current.Value, period)
-
-	if _, err := s.products().UpdateMany(ctx,
-		bson.M{"period": bson.M{"$ne": period}},
-		bson.M{"$set": bson.M{
-			"bid_cents": domain.MinNewBidCents,
-			"clicks":    0,
-			"period":    period,
-		}},
-	); err != nil {
-		return err
-	}
-
-	if _, err := s.clicks().DeleteMany(ctx, bson.M{}); err != nil {
-		return err
-	}
-
-	_, err = s.meta().UpdateOne(ctx, bson.M{"_id": "period"}, bson.M{"$set": bson.M{"value": period}})
-	return err
-}
-
 func (s *Store) ListProducts(ctx context.Context) ([]domain.Product, error) {
 	opts := options.Find().SetSort(bson.D{
 		{Key: "bid_cents", Value: -1},
@@ -81,6 +36,7 @@ func (s *Store) ListProducts(ctx context.Context) ([]domain.Product, error) {
 		products = append(products, doc.toDomain())
 	}
 	s.applyClickWindow(ctx, products)
+	s.applyPaidWindows(ctx, products)
 	return products, nil
 }
 
@@ -93,6 +49,7 @@ func (s *Store) GetProduct(ctx context.Context, idOrSlug string) (domain.Product
 		return domain.Product{}, err
 	}
 	s.applyClickWindowOne(ctx, &product)
+	s.applyPaidWindowsOne(ctx, &product)
 	return product, nil
 }
 
@@ -171,6 +128,7 @@ func (s *Store) RefreshListingMeta(ctx context.Context, idOrSlug string) (domain
 			return product, ErrSiteUnreadable
 		}
 		s.applyClickWindowOne(ctx, &product)
+		s.applyPaidWindowsOne(ctx, &product)
 		return product, nil
 	}
 
@@ -190,6 +148,7 @@ func (s *Store) RefreshListingMeta(ctx context.Context, idOrSlug string) (domain
 	log.Printf("listing meta refresh %s: tagline=%q icon=%q", product.WebsiteURL, info.Tagline, info.IconURL)
 	out := updated.toDomain()
 	s.applyClickWindowOne(ctx, &out)
+	s.applyPaidWindowsOne(ctx, &out)
 	return out, nil
 }
 

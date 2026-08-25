@@ -56,12 +56,12 @@ func TestValidateBid(t *testing.T) {
 	}
 
 	existing := &Product{BidCents: 1000}
-	paid, err = ValidateBid(1200, existing)
+	paid, err = ValidateBid(200, existing)
 	if err != nil || paid != 200 {
-		t.Fatalf("raise: paid=%d err=%v", paid, err)
+		t.Fatalf("extra payment: paid=%d err=%v", paid, err)
 	}
-	if _, err := ValidateBid(1000, existing); err == nil {
-		t.Fatal("expected raise too small")
+	if _, err := ValidateBid(0, existing); err == nil {
+		t.Fatal("expected extra payment too small")
 	}
 }
 

@@ -13,21 +13,30 @@ type Category struct {
 }
 
 type Product struct {
-	ID         string    `json:"id"`
-	Slug       string    `json:"slug"`
-	Name       string    `json:"name"`
-	Tagline    string    `json:"tagline"`
-	WebsiteURL string    `json:"websiteUrl"`
-	IconURL    string    `json:"iconUrl"`
-	ListingKey string    `json:"listingKey"`
-	Categories []string  `json:"categories"`
-	BidCents        int       `json:"bidCents"`
-	Clicks          int       `json:"clicks"`
-	ClicksLastHour  int       `json:"clicksLastHour"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
-	Accent     string    `json:"accent"`
-	Period     string    `json:"-"`
+	ID               string     `json:"id"`
+	Slug             string     `json:"slug"`
+	Name             string     `json:"name"`
+	Tagline          string     `json:"tagline"`
+	WebsiteURL       string     `json:"websiteUrl"`
+	IconURL          string     `json:"iconUrl"`
+	ListingKey       string     `json:"listingKey"`
+	Categories       []string   `json:"categories"`
+	BidCents         int        `json:"bidCents"`
+	PaidDailyCents   int        `json:"paidDailyCents"`
+	PaidWeeklyCents  int        `json:"paidWeeklyCents"`
+	PaidMonthlyCents int        `json:"paidMonthlyCents"`
+	PaidAllTimeCents int        `json:"paidAllTimeCents"`
+	Clicks           int        `json:"clicks"`
+	ClicksLastHour   int        `json:"clicksLastHour"`
+	ClicksDaily      int        `json:"clicksDaily"`
+	ClicksWeekly     int        `json:"clicksWeekly"`
+	ClicksMonthly    int        `json:"clicksMonthly"`
+	ClicksAllTime    int        `json:"clicksAllTime"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+	LastPaidAt       *time.Time `json:"lastPaidAt,omitempty"`
+	LastPaidCents    int        `json:"lastPaidCents"`
+	Period           string     `json:"-"`
 }
 
 type ListingTarget struct {
@@ -77,13 +86,6 @@ func UniqueSlug(name string, taken map[string]struct{}) string {
 		slug = base + "-" + itoa(n)
 		n++
 	}
-}
-
-func AccentForIndex(n int) string {
-	if len(AccentPalette) == 0 {
-		return "#0f766e"
-	}
-	return AccentPalette[n%len(AccentPalette)]
 }
 
 func itoa(n int) string {

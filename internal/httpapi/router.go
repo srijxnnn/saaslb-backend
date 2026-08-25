@@ -35,10 +35,8 @@ func New(cfg config.Config, db *store.Store, payments *dodo.Client) http.Handler
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
-	r.Use(s.withPeriod)
 
 	r.Get("/api/health", s.health)
-	r.Get("/api/period", s.period)
 	r.Get("/api/categories", s.categories)
 	r.Get("/api/stats", s.stats)
 	r.Post("/api/presence", s.presence)

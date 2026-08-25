@@ -78,7 +78,7 @@ func (s *Store) MarkCheckoutFailed(ctx context.Context, id, paymentID string) er
 	return err
 }
 
-func (s *Store) FulfillCheckout(ctx context.Context, checkoutID, paymentID, period string) (domain.Product, error) {
+func (s *Store) FulfillCheckout(ctx context.Context, checkoutID, paymentID string) (domain.Product, error) {
 	checkout, err := s.GetCheckout(ctx, checkoutID)
 	if err != nil {
 		return domain.Product{}, err
@@ -114,12 +114,12 @@ func (s *Store) FulfillCheckout(ctx context.Context, checkoutID, paymentID, peri
 	now := time.Now().UTC()
 
 	if errors.Is(err, ErrNotFound) {
-		product, err = s.createFromCheckout(ctx, checkout, period, now)
+		product, err = s.createFromCheckout(ctx, checkout, now)
 		if err != nil {
 			return domain.Product{}, err
 		}
 	} else {
-		product, err = s.raiseProduct(ctx, existing, checkout, period)
+		product, err = s.raiseProduct(ctx, existing, checkout)
 		if err != nil {
 			return domain.Product{}, err
 		}
@@ -145,12 +145,8 @@ func (s *Store) FulfillCheckout(ctx context.Context, checkoutID, paymentID, peri
 	return product, nil
 }
 
-func (s *Store) createFromCheckout(ctx context.Context, checkout Checkout, period string, now time.Time) (domain.Product, error) {
+func (s *Store) createFromCheckout(ctx context.Context, checkout Checkout, now time.Time) (domain.Product, error) {
 	taken, err := s.takenSlugs(ctx)
-	if err != nil {
-		return domain.Product{}, err
-	}
-	count, err := s.products().CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return domain.Product{}, err
 	}
@@ -169,8 +165,6 @@ func (s *Store) createFromCheckout(ctx context.Context, checkout Checkout, perio
 		Clicks:     0,
 		CreatedAt:  now,
 		UpdatedAt:  now,
-		Accent:     domain.AccentForIndex(int(count)),
-		Period:     period,
 	}
 
 	err = s.insertProduct(ctx, product, checkout.ID)
@@ -185,13 +179,13 @@ func (s *Store) createFromCheckout(ctx context.Context, checkout Checkout, perio
 	if err != nil {
 		return domain.Product{}, err
 	}
-	return s.raiseProduct(ctx, existing, checkout, period)
+	return s.raiseProduct(ctx, existing, checkout)
 }
 
-// raiseProduct applies a paid bid with compare-and-set on bid_cents so two
-// concurrent checkouts cannot both raise from the same stale value. last_checkout_id
-// makes a webhook retry a no-op instead of a second raise.
-func (s *Store) raiseProduct(ctx context.Context, existing productDoc, checkout Checkout, period string) (domain.Product, error) {
+// raiseProduct applies a payment with compare-and-set on bid_cents so two
+// concurrent checkouts cannot both add from the same stale total. last_checkout_id
+// makes a webhook retry a no-op instead of a second payment.
+func (s *Store) raiseProduct(ctx context.Context, existing productDoc, checkout Checkout) (domain.Product, error) {
 	for {
 		if existing.LastCheckoutID == checkout.ID {
 			return existing.toDomain(), nil
@@ -199,11 +193,9 @@ func (s *Store) raiseProduct(ctx context.Context, existing productDoc, checkout 
 
 		next := existing.toDomain()
 		next.BidCents = domain.NextBidAfterPayment(&next, checkout.AmountCents, checkout.PaidCents)
-		next.Period = period
 
 		set := bson.M{
 			"bid_cents":        next.BidCents,
-			"period":           period,
 			"last_checkout_id": checkout.ID,
 			"updated_at":       time.Now().UTC(),
 		}

@@ -1,6 +1,6 @@
 // Package metadesc pulls a short description from a listing's website.
 // The board already stores a tagline; this fills or refreshes it from
-// the page's own SEO tags instead of asking the bidder to write one.
+// the page's own SEO tags instead of asking the lister to write one.
 package metadesc
 
 import (

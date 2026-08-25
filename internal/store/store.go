@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -9,8 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-
-	"saaslb-backend/internal/domain"
 )
 
 type Store struct {
@@ -108,6 +107,13 @@ func (s *Store) Migrate(ctx context.Context) error {
 				SetUnique(true).
 				SetPartialFilterExpression(bson.M{"payment_id": bson.M{"$type": "string"}}),
 		},
+		{
+			Keys: bson.D{
+				{Key: "status", Value: 1},
+				{Key: "product_id", Value: 1},
+				{Key: "paid_at", Value: 1},
+			},
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("checkouts indexes: %w", err)
@@ -117,21 +123,22 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return fmt.Errorf("stats: %w", err)
 	}
 
+	if err := dropIndexIfExists(ctx, s.clicks(), "created_at_1"); err != nil {
+		return fmt.Errorf("drop clicks ttl: %w", err)
+	}
+	if err := dropIndexIfExists(ctx, s.clicks(), "product_id_1_visitor_id_1"); err != nil {
+		return fmt.Errorf("drop clicks visitor unique: %w", err)
+	}
+
 	_, err = s.clicks().Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys: bson.D{{Key: "created_at", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(
-				int32(domain.ClickWindow.Seconds()),
-			),
-		},
 		{
 			Keys: bson.D{{Key: "product_id", Value: 1}, {Key: "created_at", Value: 1}},
 		},
 		{
-			Keys: bson.D{{Key: "product_id", Value: 1}, {Key: "visitor_id", Value: 1}},
+			Keys: bson.D{{Key: "dedup_key", Value: 1}},
 			Options: options.Index().
 				SetUnique(true).
-				SetPartialFilterExpression(bson.M{"visitor_id": bson.M{"$type": "string"}}),
+				SetPartialFilterExpression(bson.M{"dedup_key": bson.M{"$type": "string"}}),
 		},
 	})
 	if err != nil {
@@ -139,4 +146,16 @@ func (s *Store) Migrate(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func dropIndexIfExists(ctx context.Context, coll *mongo.Collection, name string) error {
+	err := coll.Indexes().DropOne(ctx, name)
+	if err == nil {
+		return nil
+	}
+	var cmd mongo.CommandError
+	if errors.As(err, &cmd) && (cmd.Code == 27 || cmd.Name == "IndexNotFound") {
+		return nil
+	}
+	return err
 }

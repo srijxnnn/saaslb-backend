@@ -25,7 +25,7 @@ type createCheckoutRequest struct {
 func (s *Server) createCheckout(w http.ResponseWriter, r *http.Request) {
 	var req createCheckoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeMessage(w, http.StatusBadRequest, "Could not read that bid.")
+		writeMessage(w, http.StatusBadRequest, "Could not read that payment.")
 		return
 	}
 
@@ -80,9 +80,9 @@ func (s *Server) createCheckout(w http.ResponseWriter, r *http.Request) {
 
 	// $0 listings skip Dodo: there is nothing to charge.
 	if s.cfg.PaymentsMode == "simulate" || paidCents == 0 {
-		product, err := s.db.FulfillCheckout(r.Context(), checkout.ID, "", s.currentPeriod())
+		product, err := s.db.FulfillCheckout(r.Context(), checkout.ID, "")
 		if err != nil && !errors.Is(err, store.ErrAlreadyProcessed) {
-			writeMessage(w, http.StatusInternalServerError, "Could not apply that bid.")
+			writeMessage(w, http.StatusInternalServerError, "Could not apply that payment.")
 			return
 		}
 		products, listErr := s.db.ListProducts(r.Context())
@@ -123,7 +123,7 @@ func (s *Server) createCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.db.SetCheckoutSession(r.Context(), checkout.ID, session.SessionID); err != nil {
-		writeMessage(w, http.StatusInternalServerError, "Saved the bid but lost the session id.")
+		writeMessage(w, http.StatusInternalServerError, "Saved the payment but lost the session id.")
 		return
 	}
 
@@ -183,7 +183,7 @@ func (s *Server) syncCheckout(r *http.Request, checkout store.Checkout) (store.C
 
 	switch *status.PaymentStatus {
 	case "succeeded":
-		if _, err := s.db.FulfillCheckout(r.Context(), checkout.ID, paymentID, s.currentPeriod()); err != nil && !errors.Is(err, store.ErrAlreadyProcessed) {
+		if _, err := s.db.FulfillCheckout(r.Context(), checkout.ID, paymentID); err != nil && !errors.Is(err, store.ErrAlreadyProcessed) {
 			return checkout, err
 		}
 	case "failed", "cancelled":
@@ -208,7 +208,7 @@ func checkoutStartError(err error) string {
 		case "PAY_AS_YOU_WANT_AMOUNT_REQUIRED":
 			return "Dodo product needs Pay What You Want turned on."
 		case "REQUEST_AMOUNT_BELOW_MINIMUM", "TOTAL_PAYMENT_AMOUNT_BELOW_MINIMUM_AMOUNT":
-			return "That bid is below the Dodo product minimum."
+			return "That payment is below the Dodo product minimum."
 		}
 		if api.Status == http.StatusUnauthorized {
 			return "Dodo rejected the API key. Check that DODO_ENVIRONMENT matches the key (test vs live)."

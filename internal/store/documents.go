@@ -21,7 +21,6 @@ type productDoc struct {
 	Clicks          int       `bson:"clicks"`
 	CreatedAt       time.Time `bson:"created_at"`
 	UpdatedAt       time.Time `bson:"updated_at,omitempty"`
-	Accent          string    `bson:"accent"`
 	Period          string    `bson:"period"`
 	LastCheckoutID  string    `bson:"last_checkout_id,omitempty"`
 	MetaRefreshedAt time.Time `bson:"meta_refreshed_at,omitempty"`
@@ -31,6 +30,7 @@ type clickDoc struct {
 	ID        string    `bson:"_id"`
 	ProductID string    `bson:"product_id"`
 	VisitorID string    `bson:"visitor_id"`
+	DedupKey  string    `bson:"dedup_key"`
 	CreatedAt time.Time `bson:"created_at"`
 }
 
@@ -76,7 +76,6 @@ func (d productDoc) toDomain() domain.Product {
 		Clicks:     d.Clicks,
 		CreatedAt:  d.CreatedAt,
 		UpdatedAt:  d.lastUpdated(),
-		Accent:     d.Accent,
 		Period:     d.Period,
 	}
 }
@@ -119,7 +118,6 @@ func productFromDomain(product domain.Product, lastCheckoutID string) productDoc
 		Clicks:         product.Clicks,
 		CreatedAt:      product.CreatedAt,
 		UpdatedAt:      updatedAt,
-		Accent:         product.Accent,
 		Period:         product.Period,
 		LastCheckoutID: lastCheckoutID,
 	}

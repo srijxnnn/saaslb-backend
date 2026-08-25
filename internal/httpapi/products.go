@@ -35,7 +35,6 @@ func (s *Server) listProducts(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"products": filtered,
-		"period":   s.currentPeriod(),
 	})
 }
 

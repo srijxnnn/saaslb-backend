@@ -69,7 +69,7 @@ func (s *Server) handlePaymentSucceeded(r *http.Request, event dodo.Event) error
 		return err
 	}
 
-	_, err = s.db.FulfillCheckout(r.Context(), checkout.ID, payment.PaymentID, s.currentPeriod())
+	_, err = s.db.FulfillCheckout(r.Context(), checkout.ID, payment.PaymentID)
 	if errors.Is(err, store.ErrAlreadyProcessed) {
 		return nil
 	}

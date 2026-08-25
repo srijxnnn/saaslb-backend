@@ -11,7 +11,6 @@ import (
 
 	"saaslb-backend/internal/config"
 	"saaslb-backend/internal/dodo"
-	"saaslb-backend/internal/domain"
 	"saaslb-backend/internal/httpapi"
 	"saaslb-backend/internal/store"
 )
@@ -33,11 +32,6 @@ func main() {
 
 	if err := db.Migrate(ctx); err != nil {
 		log.Fatalf("migrate: %v", err)
-	}
-
-	period := domain.CurrentPeriodKey(time.Now())
-	if err := db.EnsurePeriod(ctx, period); err != nil {
-		log.Fatalf("period: %v", err)
 	}
 	if err := db.RefreshEmptyTaglines(ctx); err != nil {
 		log.Printf("tagline refresh: %v", err)
