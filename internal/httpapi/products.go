@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -79,8 +80,24 @@ func (s *Server) refreshProductMeta(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"product": product})
 }
 
+type clickRequest struct {
+	VisitorID string `json:"visitorId"`
+}
+
 func (s *Server) recordClick(w http.ResponseWriter, r *http.Request) {
-	clicks, err := s.db.IncrementClicks(r.Context(), chi.URLParam(r, "id"))
+	var req clickRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeMessage(w, http.StatusBadRequest, "Could not read that click.")
+		return
+	}
+
+	visitorID, err := domain.NormalizeVisitorID(req.VisitorID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	clicks, counted, err := s.db.IncrementClicks(r.Context(), chi.URLParam(r, "id"), visitorID)
 	if err != nil {
 		if err == store.ErrNotFound {
 			writeMessage(w, http.StatusNotFound, "Listing not found.")
@@ -89,7 +106,7 @@ func (s *Server) recordClick(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusInternalServerError, "Could not record that click.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"clicks": clicks})
+	writeJSON(w, http.StatusOK, map[string]any{"clicks": clicks, "counted": counted})
 }
 
 func contains(values []string, needle string) bool {

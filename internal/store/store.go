@@ -127,6 +127,12 @@ func (s *Store) Migrate(ctx context.Context) error {
 		{
 			Keys: bson.D{{Key: "product_id", Value: 1}, {Key: "created_at", Value: 1}},
 		},
+		{
+			Keys: bson.D{{Key: "product_id", Value: 1}, {Key: "visitor_id", Value: 1}},
+			Options: options.Index().
+				SetUnique(true).
+				SetPartialFilterExpression(bson.M{"visitor_id": bson.M{"$type": "string"}}),
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("clicks indexes: %w", err)

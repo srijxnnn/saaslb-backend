@@ -11,10 +11,11 @@ import (
 	"saaslb-backend/internal/domain"
 )
 
-func (s *Store) recordClickEvent(ctx context.Context, productID string) error {
+func (s *Store) recordClickEvent(ctx context.Context, productID, visitorID string) error {
 	_, err := s.clicks().InsertOne(ctx, clickDoc{
 		ID:        NewID("clk_"),
 		ProductID: productID,
+		VisitorID: visitorID,
 		CreatedAt: time.Now().UTC(),
 	})
 	return err

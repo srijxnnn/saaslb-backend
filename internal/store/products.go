@@ -52,6 +52,10 @@ func (s *Store) EnsurePeriod(ctx context.Context, period string) error {
 		return err
 	}
 
+	if _, err := s.clicks().DeleteMany(ctx, bson.M{}); err != nil {
+		return err
+	}
+
 	_, err = s.meta().UpdateOne(ctx, bson.M{"_id": "period"}, bson.M{"$set": bson.M{"value": period}})
 	return err
 }
@@ -96,24 +100,37 @@ func (s *Store) ProductByListingKey(ctx context.Context, key string) (domain.Pro
 	return s.findProduct(ctx, bson.M{"listing_key": key})
 }
 
-func (s *Store) IncrementClicks(ctx context.Context, id string) (int, error) {
+func (s *Store) IncrementClicks(ctx context.Context, id, visitorID string) (int, bool, error) {
+	var current productDoc
+	err := s.products().FindOne(ctx, bson.M{"_id": id}).Decode(&current)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return 0, false, ErrNotFound
+	}
+	if err != nil {
+		return 0, false, err
+	}
+
+	insertErr := s.recordClickEvent(ctx, id, visitorID)
+	if mongo.IsDuplicateKeyError(insertErr) {
+		return current.Clicks, false, nil
+	}
+	if insertErr != nil {
+		return 0, false, insertErr
+	}
+
 	var doc productDoc
-	err := s.products().FindOneAndUpdate(ctx,
+	err = s.products().FindOneAndUpdate(ctx,
 		bson.M{"_id": id},
 		bson.M{"$inc": bson.M{"clicks": 1}},
 		options.FindOneAndUpdate().SetReturnDocument(options.After),
 	).Decode(&doc)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return 0, ErrNotFound
+		return 0, false, ErrNotFound
 	}
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
-
-	if insertErr := s.recordClickEvent(ctx, id); insertErr != nil {
-		log.Printf("click event %s: %v", id, insertErr)
-	}
-	return doc.Clicks, nil
+	return doc.Clicks, true, nil
 }
 
 const metaRefreshCooldown = 10 * time.Second

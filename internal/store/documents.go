@@ -30,6 +30,7 @@ type productDoc struct {
 type clickDoc struct {
 	ID        string    `bson:"_id"`
 	ProductID string    `bson:"product_id"`
+	VisitorID string    `bson:"visitor_id"`
 	CreatedAt time.Time `bson:"created_at"`
 }
 
