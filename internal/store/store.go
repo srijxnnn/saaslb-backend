@@ -114,6 +114,13 @@ func (s *Store) Migrate(ctx context.Context) error {
 				{Key: "paid_at", Value: 1},
 			},
 		},
+		{
+			Keys: bson.D{
+				{Key: "status", Value: 1},
+				{Key: "paid_at", Value: -1},
+				{Key: "created_at", Value: -1},
+			},
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("checkouts indexes: %w", err)
@@ -131,6 +138,9 @@ func (s *Store) Migrate(ctx context.Context) error {
 	}
 
 	_, err = s.clicks().Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys: bson.D{{Key: "created_at", Value: -1}},
+		},
 		{
 			Keys: bson.D{{Key: "product_id", Value: 1}, {Key: "created_at", Value: 1}},
 		},

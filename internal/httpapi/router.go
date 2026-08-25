@@ -41,6 +41,7 @@ func New(cfg config.Config, db *store.Store, payments *dodo.Client) http.Handler
 	r.Get("/api/stats", s.stats)
 	r.Post("/api/presence", s.presence)
 	r.Get("/api/products", s.listProducts)
+	r.Get("/api/activity", s.listActivity)
 	r.Get("/api/products/{id}", s.getProduct)
 	r.Post("/api/products/{id}/clicks", s.recordClick)
 	r.Post("/api/products/{id}/meta", s.refreshProductMeta)
