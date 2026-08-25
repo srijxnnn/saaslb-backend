@@ -123,7 +123,7 @@ Cost-per-click on a row is `window paid / window clicks`.
 
 **Latest activity** (frontend): listings that have `lastPaidAt`. The dollar amount shown is `lastPaidCents` (that checkout), not the window total.
 
-The frontend query `?range=daily|weekly|monthly|all` only changes how the client sorts the same payload. Omit `range` for monthly.
+The frontend query `?range=daily|weekly|monthly|all` only changes how the client sorts the same payload. Omit `range` for daily.
 
 ---
 
